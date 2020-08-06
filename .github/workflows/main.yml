@@ -11,6 +11,10 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
       - name: Build v8
         env:
           USE_VERSION: 7.4.288 
@@ -31,7 +35,7 @@ jobs:
           gclient sync
           
           cd v8
-          
+          ./build/install-build-deps.sh
           ./tools/dev/v8gen.py x64.release -vv
           rm out.gn/x64.release/args.gn          
           cp $GITHUB_WORKSPACE/v8/linux-x64/args.gn out.gn/x64.release/args.gn
