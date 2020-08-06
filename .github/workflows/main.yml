@@ -19,6 +19,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
+      with:
+        depth: 1
       
     - name: Set up Python 2.7
       uses: actions/setup-python@v2
@@ -32,6 +34,6 @@ jobs:
     - name: Build for ${{ matrix.target }}
       if: matrix.target == 'win32'
       run: |
-        j2v8-cli.cmd
+        .\j2v8-cli.cmd
         python build.py -t win32 -a x64 j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
         
