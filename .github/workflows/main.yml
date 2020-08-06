@@ -25,6 +25,10 @@ jobs:
       with:
         python-version: 2.7
         
+    - name: Setup MSBuild
+      if: ${{ matrix.target }} == "win32"
+      uses: microsoft/setup-msbuild@v1.0.1
+        
         
     - name: Download monolithic libraries to v8.out directory and bundle Linux jar and Android aar file
       shell: bash
