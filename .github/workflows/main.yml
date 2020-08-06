@@ -28,22 +28,20 @@ jobs:
           gclient sync
           
           cd v8
-          ./tools/dev/v8gen.py x64.release -vv
-
-          rm out.gn/x64.release/args.gn
-          cp $GITHUB_WORKSPACE/v8/${{ matrix.target }}-x64/args.gn out.gn/x64.release/args.gn
+          ./tools/dev/v8gen.py x64.release.check -vv
+         
           ls -al out.gn/x64.release/
-          cat out.gn/x64.release/args.gn
-          sleep 1m
-          touch out.gn/x64.release/args.gn
-          ls -al out.gn/x64.release/
+          
           ninja -C out.gn/x64.release -t clean
           ninja -C out.gn/x64.release v8_monolith
-          mkdir -p $GITHUB_WORKSPACE/v8.out/${{ matrix.target }}.x64
-          cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/v8.out/${{ matrix.target }}.x64
           
-          cd $GITHUB_WORKSPACE
-          cp -R v8/include v8.out/
+          mkdir -p $GITHUB_WORKSPACE/dist/
+          
+          cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
+          cp -R include $GITHUB_WORKSPACE/dist/
+          
+          cd ..
+
   generate_j2v8_archives:
     strategy:
       fail-fast: true
