@@ -2,6 +2,51 @@ name: Build J2V8
 on: [push]
 
 jobs:
+  buildV8:
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [linux] 
+
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        run: |
+          git clone --depth 1 
+      - name: Build v8
+        env:
+          USE_VERSION: 7.4.288 
+        run: |
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
+          export PATH=$GITHUB_WORKSPACE/depot_tools:"$PATH" 
+
+          fetch v8
+          
+          cd v8
+          git checkout ${USE_VERSION}
+          cd ..
+          
+          echo "target_os= ['${{ matrix.target }} ']">>.gclient
+          gclient sync
+          
+          cd v8
+          ./tools/dev/v8gen.py x64.release -vv
+
+          rm out.gn/x64.release/args.gn
+          cp $GITHUB_WORKSPACE/v8/${{ matrix.target }}-x64/args.gn out.gn/x64.release/args.gn
+          ls -al out.gn/x64.release/
+          cat out.gn/x64.release/args.gn
+          sleep 1m
+          touch out.gn/x64.release/args.gn
+          ls -al out.gn/x64.release/
+          ninja -C out.gn/x64.release -t clean
+          ninja -C out.gn/x64.release v8_monolith
+          mkdir -p $GITHUB_WORKSPACE/v8.out/${{ matrix.target }}.x64
+          cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/v8.out/${{ matrix.target }}.x64
+          
+          cd $GITHUB_WORKSPACE
+          cp -R v8/include v8.out/
   generate_j2v8_archives:
     strategy:
       fail-fast: true
@@ -32,7 +77,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.1
         
     - name: Build for ${{ matrix.target }}
-      if: matrix.target == 'win32'
+      if: matrix.target == 'wien32'
       run: |
         .\j2v8-cli.cmd
         python build.py -t win32 -a x64 j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
