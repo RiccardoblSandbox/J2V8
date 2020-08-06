@@ -11,6 +11,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v2
       - name: Build v8
         env:
           USE_VERSION: 7.4.288 
