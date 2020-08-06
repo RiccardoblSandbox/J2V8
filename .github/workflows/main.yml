@@ -11,14 +11,11 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        run: |
-          git clone --depth 1 
       - name: Build v8
         env:
           USE_VERSION: 7.4.288 
         run: |
-          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
+          git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
           export PATH=$GITHUB_WORKSPACE/depot_tools:"$PATH" 
 
           fetch v8
