@@ -29,6 +29,10 @@ jobs:
           
           cd v8
           ./tools/dev/v8gen.py x64.release -vv
+          
+          ls -l linux-x64
+          cp linux-x64/args.gn out.gn/x64.release/args.gn
+          
          
           ls -al out.gn/x64.release/
           
