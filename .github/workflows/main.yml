@@ -28,7 +28,7 @@ jobs:
           gclient sync
           
           cd v8
-          ./tools/dev/v8gen.py x64.release.check -vv
+          ./tools/dev/v8gen.py x64.release -vv
          
           ls -al out.gn/x64.release/
           
