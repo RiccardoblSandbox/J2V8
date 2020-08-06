@@ -26,7 +26,7 @@ jobs:
         python-version: 2.7
         
     - name: Setup MSBuild
-      if: startsWith(${{ matrix.os }}, "windows-")
+      if: matrix.target == 'win32'
       uses: microsoft/setup-msbuild@v1.0.1
         
         
