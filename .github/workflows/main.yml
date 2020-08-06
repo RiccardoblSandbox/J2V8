@@ -11,14 +11,15 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v2
       - name: Build v8
         env:
           USE_VERSION: 7.4.288 
         run: |
+          mkdir -p v8build
+          cd v8build
+          
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
-          export PATH=$GITHUB_WORKSPACE/depot_tools:"$PATH" 
+          export PATH=$GITHUB_WORKSPACE/v8build/depot_tools:"$PATH" 
 
           fetch v8
           
@@ -30,25 +31,23 @@ jobs:
           gclient sync
           
           cd v8
+          
           ./tools/dev/v8gen.py x64.release -vv
-          
-          cd .. 
-          du .
-
-          ls -l linux-x64
-          cp linux-x64/args.gn out.gn/x64.release/args.gn
-          
-         
-          ls -al out.gn/x64.release/
+          rm out.gn/x64.release/args.gn          
+          cp $GITHUB_WORKSPACE/v8/linux-x64/args.gn out.gn/x64.release/args.gn
           
           ninja -C out.gn/x64.release -t clean
           ninja -C out.gn/x64.release v8_monolith
           
-          mkdir -p $GITHUB_WORKSPACE/dist/
           
+          du out.gn/x64.release
+                
+          mkdir -p $GITHUB_WORKSPACE/dist/
           
           cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
           cp -R include $GITHUB_WORKSPACE/dist/
+          
+          cd ..
           
           cd ..
 
