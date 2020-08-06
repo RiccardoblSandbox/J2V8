@@ -30,6 +30,9 @@ jobs:
           cd v8
           ./tools/dev/v8gen.py x64.release -vv
           
+          cd .. 
+          du .
+
           ls -l linux-x64
           cp linux-x64/args.gn out.gn/x64.release/args.gn
           
@@ -40,6 +43,7 @@ jobs:
           ninja -C out.gn/x64.release v8_monolith
           
           mkdir -p $GITHUB_WORKSPACE/dist/
+          
           
           cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
           cp -R include $GITHUB_WORKSPACE/dist/
