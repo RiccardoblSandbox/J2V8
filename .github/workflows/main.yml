@@ -115,11 +115,13 @@ jobs:
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
+            export gm="$GITHUB_WORKSPACE/v8build/depot_tools/gm.bat"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
             export ninja="$GITHUB_WORKSPACE/ninja.exe"
           else
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
+            export gm="$GITHUB_WORKSPACE/v8build/depot_tools/gm"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
             export ninja="`which ninja`"
@@ -160,13 +162,14 @@ jobs:
           fi
           
           # Prepare
-          echo "Prepare build"
-          "$gn" gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
+          #echo "Prepare build"
+          #"$gn" gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                   
           # Build!
-          echo "Build"
-          "$ninja" -C out/          
-                  
+          #echo "Build"
+          #"$ninja" -C out/          
+          "$gm" x64.release
+          du .       
 
           # Dist
           echo "Prepare dist"
@@ -178,7 +181,7 @@ jobs:
           mkdir -p "$libsPath"
           
           # Copy library
-          cp -v out/obj/libv8_monolith.* "$libsPath"
+          cp -v out.gm/obj/libv8_monolith.* "$libsPath"
           
           # Copy headers
           cp -Rv include  "$distPath"
