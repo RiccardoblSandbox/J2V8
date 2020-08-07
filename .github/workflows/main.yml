@@ -124,6 +124,8 @@ jobs:
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
             export ninja="ninja"
           fi
+          
+          
 
           # Clone v8
           echo "Fetch v8"          
@@ -151,6 +153,10 @@ jobs:
           then 
              echo "Install dependencies"
             ./build/install-build-deps.sh
+          elif [ "${{ matrix.os }}" == "windows-latest" ];
+          then
+            echo "Install dependencies"
+            python -m pip install pywin32
           fi
           
           # Prepare
