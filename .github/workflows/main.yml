@@ -115,18 +115,18 @@ jobs:
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
-            export gm="$GITHUB_WORKSPACE/v8build/depot_tools/gm.bat"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
             export ninja="$GITHUB_WORKSPACE/ninja.exe"
           else
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
-            export gm="$GITHUB_WORKSPACE/v8build/depot_tools/gm"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
             export ninja="`which ninja`"
           fi
-          
+
+          export gm="python \"$GITHUB_WORKSPACE/v8build/v8/tools/dev/gm.py\""
+
           
 
           # Clone v8
