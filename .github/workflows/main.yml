@@ -11,48 +11,45 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        include:
-          
-          - target: win32-x64
-            target_os: windows
+        include:          
+          - target: windows-x64
+            target_os: win32
             target_arch: x64 
-            config: windows-x64 
+            os: windows-latest  
 
           - target: linux-x64
             target_os: linux
             target_arch: x64 
-            config: linux-x64 
+            os: ubuntu-latest  
 
           - target: android-arm
             target_os: android
             target_arch: arm
-            config: android-arm
+            os: ubuntu-latest  
 
           - target: android-arm64
             target_os: android
             target_arch: arm64
-            config: android-arm64
+            os: ubuntu-latest  
 
           - target: android-ia32
             target_os: android
             target_arch: ia32
-            config: android-ia32
- 
+            os: ubuntu-latest  
+
           - target: android-x64
             target_os: android
-            target_arch: x64
-            config: android-x64
-
-         
+            target_arch: x64       
+            os: ubuntu-latest  
 
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       
       - name: Setup cache
         uses: actions/cache@v2.1.0
         with:
-          path: dist/
+          path: v8.out/
           key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}
           
       - name: Checkout
@@ -61,6 +58,7 @@ jobs:
           fetch-depth: 1
       
       - name: Build v8 ${{ env.V8VERSION }}
+        shell: bash
         env:
           USE_VERSION: 7.4.288 
         run: |
@@ -86,23 +84,31 @@ jobs:
           git checkout ${V8VERSION}
           cd ..
           
-          echo "target_os= ['${{ matrix.target_os }}']">>.gclient
+          tos="${{ matrix.target_os }}"
+          if [ "$tos" == "win32" ];then tos="win"; fi
+          
+          echo "target_os= ['$tos']">>.gclient
           gclient sync
           
           cd v8
+          ls ./build/ -l
           ./build/install-build-deps.sh
-          ./tools/dev/v8gen.py ${{ matrix.target_arch }}.release -vv
-          
-          gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.config }}/args.gn`"
+         
+          gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                     
           ninja -C out/          
                          
-          rm -Rf $GITHUB_WORKSPACE/dist/ || true
-          mkdir -p $GITHUB_WORKSPACE/dist/
           
-          cp -v out/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
-          cp -Rv include $GITHUB_WORKSPACE/dist/
-          echo 1 > $GITHUB_WORKSPACE/dist/built
+          distPath="$GITHUB_WORKSPACE/v8.out/"
+          libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
+          
+          rm -Rf "$distPath" || true
+          mkdir -p "$distPath"
+          mkdir -p "$libsPath"
+          
+          cp -v out/obj/libv8_monolith.* "$libsPath"
+          cp -Rv include  "$distPath"
+          echo 1 > "$distPath"
           
           cd ../..
                     
@@ -111,21 +117,48 @@ jobs:
         if: ${{ failure() }} && env.DEBUG_TMATE!=""
         uses: mxschmitt/action-tmate@v2
         
-  generate_j2v8_archives:
+  buildJ2v8:
     strategy:
       fail-fast: true
       matrix:
-        target: [win32,linux] 
-        include:
-          - target: win32
-            os: windows-latest
-          - target: linux
-            os: ubuntu-latest
+        include: 
+          - target: windows-x64
+            target_os: win32
+            target_arch: x64 
+            os: windows-latest 
+
+          - target: linux-x64
+            target_os: linux
+            target_arch: x64
+            os: ubuntu-latest  
+
+          - target: android-arm
+            target_os: android
+            target_arch: arm
+            os: ubuntu-latest 
+
+          - target: android-arm64
+            target_os: android
+            target_arch: arm64
+            os: ubuntu-latest  
+
+          - target: android-ia32
+            target_os: android
+            target_arch: ia32
+            os: ubuntu-latest  
+
+          - target: android-x64
+            target_os: android
+            target_arch: x64
+            os: ubuntu-latest  
 
     runs-on: ${{ matrix.os }}
     name: Build for ${{ matrix.target }}
+    needs: [buildV8]
+  
 
     steps:
+    
     - name: Checkout
       uses: actions/checkout@v1
       with:
@@ -135,14 +168,28 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 2.7
-        
+   
+    - name: Fetch v8 library
+      uses: actions/cache@v2.1.0
+      with:
+        path: v8.out/
+        key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}       
+          
     - name: Setup MSBuild
-      if: matrix.target == 'win32'
+      if: matrix.os == 'windows-latest'
       uses: microsoft/setup-msbuild@v1.0.1
         
     - name: Build for ${{ matrix.target }}
-      if: matrix.target == 'wien32'
+      if: matrix.os == 'windows-latest'
+      shell: cmd
       run: |
         .\j2v8-cli.cmd
-        python build.py -t win32 -a x64 j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
+        python build.py -t  ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
+        
+    - name: Build for ${{ matrix.target }}
+      if: matrix.os != 'windows-latest'
+      run: |
+        source ./j2v8-cli.sh
+        a1=""; if [ "${{ matrix.target_os }}" == "android" ]; then a1="$a1 --keep-native-libs"; fi
+        python build.py -t ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} $a1 --docker j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
         
