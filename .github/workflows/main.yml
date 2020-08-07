@@ -58,6 +58,9 @@ jobs:
         with:
           fetch-depth: 1
       
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v2
+      
       - name: Build v8 ${{ env.V8VERSION }}
         env:
           USE_VERSION: 7.4.288 
