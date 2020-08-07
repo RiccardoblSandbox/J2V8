@@ -1,9 +1,9 @@
 name: Build J2V8
 on: [push]
 env:
-  V8VERSION: 7.4.288
-  CACHE_ID: 1
-  DEBUG_TMATE: "1"
+  V8VERSION: 7.4.288 # Which v8 version to checkout
+  CACHE_ID: "1" # Arbitrary string appended at the end of the cache key
+  DEBUG_TMATE: "1" # If != "" starts an ssh session when the build fails.
   
 jobs:
   buildV8:
@@ -57,7 +57,10 @@ jobs:
         with:
           fetch-depth: 1
           
-      - name: "Check cache"
+      - name: "Fetch and build v8 ${{ env.V8VERSION }} on ${{ matrix.target }}"
+        env:
+          DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+          GYP_MSVS_VERSION: 2015
         shell: bash
         run: |
           if [ ! -f "$GITHUB_WORKSPACE/dist/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
@@ -65,12 +68,9 @@ jobs:
             echo "Cache not found or invalid. Build"
           else
             echo "Cache found. Skip"
-            exit 78
+            exit 0
           fi
-          
-      - name: "Clone tools"
-        shell: bash
-        run: |     
+
           mkdir -p v8build
           cd v8build
           
@@ -78,21 +78,19 @@ jobs:
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
           echo "Cloned!"
           
-      - name: "Fetch v8 ${{ env.V8VERSION }}"
-        shell: bash
-        run: |     
-          echo "Fetch v8"          
-          cd v8build
-          
+          echo "Select build tools for ${{ matrix.os }}"
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
+            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
           else
+            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
           fi
 
+          echo "Fetch v8"          
           "$fetch" v8
           
           cd v8
@@ -114,36 +112,20 @@ jobs:
              echo "Install dependencies"
             ./build/install-build-deps.sh
           fi
-
-
-      - name: Build v8
-        shell: bash
-        run: |      
-          cd v8build/v8 
-          
-          if [ "${{ matrix.os }}" == "windows-latest" ];
-          then 
-            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
-          else
-            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
-          fi
           
           echo "Prepare build"
           "$gn" gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                   
           echo "Build"
           ninja -C out/          
-      
-      - name: Dist v8
-        shell: bash
-        run: |            
-          cd v8build/v8 
-             
+                   
           echo "Prepare dist"
           distPath="$GITHUB_WORKSPACE/v8.out/"
           libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
           
+          rm -Rf "$libsPath" || true
           rm -Rf "$distPath" || true
+          
           mkdir -p "$distPath"
           mkdir -p "$libsPath"
           
