@@ -38,10 +38,10 @@ jobs:
           ./build/install-build-deps.sh
           ./tools/dev/v8gen.py x64.release -vv
           rm out.gn/x64.release/args.gn          
-          cp $GITHUB_WORKSPACE/v8/linux-x64/args.gn out.gn/x64.release/args.gn
+          cp -v $GITHUB_WORKSPACE/v8/linux-x64/args.gn out.gn/x64.release/args.gn
           
-          ninja -C out.gn/x64.release -t clean
-          ninja -C out.gn/x64.release v8_monolith
+          cat out.gn/x64.release/args.gn
+          ninja -C out.gn/x64.release 
           
           
           du out.gn/x64.release
