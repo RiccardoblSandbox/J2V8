@@ -122,7 +122,7 @@ jobs:
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
-            export ninja="ninja"
+            export ninja="`which ninja`"
           fi
           
           
