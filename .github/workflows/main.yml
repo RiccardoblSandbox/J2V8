@@ -118,13 +118,11 @@ jobs:
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
             export ninja="$GITHUB_WORKSPACE/ninja.exe"
-            export gm="`which python` \"$GITHUB_WORKSPACE\\v8build\\v8\\tools\\dev\\gm.py\""
           else
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
             export ninja="`which ninja`"
-            export gm="`which python` \"$GITHUB_WORKSPACE/v8build/v8/tools/dev/gm.py\""
           fi
 
           
@@ -138,7 +136,6 @@ jobs:
           git checkout ${V8VERSION}
           cd ..
           
-          ls $GITHUB_WORKSPACE/v8build/v8/tools/dev/
 
 
           tos="${{ matrix.target_os }}"; 
@@ -171,7 +168,8 @@ jobs:
           # Build!
           #echo "Build"
           #"$ninja" -C out/          
-          "$gm" x64.release
+          ls ./tools/dev/gm.py 
+          python ./tools/dev/gm.py x64.release
           du .       
 
           # Dist
