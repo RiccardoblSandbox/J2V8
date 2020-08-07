@@ -75,7 +75,7 @@ jobs:
         shell: bash
         if: matrix.os == 'windows-latest'
         run: |
-          curl "https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip" -o ninja-win.zip
+          curl -L "https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip" -o ninja-win.zip
           unzip ninja-win.zip
       
       # Get cache if available
