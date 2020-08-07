@@ -118,14 +118,15 @@ jobs:
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
             export ninja="$GITHUB_WORKSPACE/ninja.exe"
+            export gm="python \"$GITHUB_WORKSPACE\\v8build\\v8\\tools\\dev\\gm.py\""
           else
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
             export ninja="`which ninja`"
+            export gm="python \"$GITHUB_WORKSPACE/v8build/v8/tools/dev/gm.py\""
           fi
-
-          export gm="python \"$GITHUB_WORKSPACE/v8build/v8/tools/dev/gm.py\""
+          ls $GITHUB_WORKSPACE/v8build/v8/tools/dev/
 
           
 
