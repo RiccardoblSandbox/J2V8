@@ -86,14 +86,14 @@ jobs:
           
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
-            alias fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
-            alias gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
+            export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
+            export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
           else
-            alias fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
-            alias gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
+            export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
+            export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
           fi
 
-          fetch v8
+          "$fetch" v8
           
           cd v8
           git checkout ${V8VERSION}
@@ -104,7 +104,7 @@ jobs:
           if [ "$tos" == "win32" ];then tos="win"; fi          
           echo "target_os= ['$tos']">>.gclient
           
-          gclient sync
+          "$gclient" sync
           
           cd v8
           ls ./build/ -l
@@ -123,13 +123,13 @@ jobs:
           
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
-            alias gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
+            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
           else
-            alias gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
+            export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
           fi
           
           echo "Prepare build"
-          gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
+          "$gn" gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                   
           echo "Build"
           ninja -C out/          
