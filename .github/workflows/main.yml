@@ -63,15 +63,20 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: microsoft/setup-msbuild@v1.0.1
       
-      # Setup Ninja
-      - name: Setup Ninja
-        uses: ashutoshvarma/setup-ninja@v1
         
       # Clone repo
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 1     
+          
+      # Get ninja on windows
+      - name: Get ninja for Windows
+        shell: bash
+        if: matrix.os == 'windows-latest'
+        run: |
+          wget "https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip" -O ninja-win.zip
+          unzip ninja-win.zip
       
       # Get cache if available
       - name: Setup cache
@@ -112,10 +117,12 @@ jobs:
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
+            export ninja="$GITHUB_WORKSPACE/ninja.exe"
           else
             export gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
             export fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
+            export ninja="ninja"
           fi
 
           # Clone v8
@@ -152,7 +159,7 @@ jobs:
                   
           # Build!
           echo "Build"
-          ninja -C out/          
+          "$ninja" -C out/          
                   
 
           # Dist
