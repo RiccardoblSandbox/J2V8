@@ -56,22 +56,21 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-      
-      - name: Build v8 ${{ env.V8VERSION }}
+          
+      - name: "Check cache"
         shell: bash
-        env:
-          USE_VERSION: 7.4.288 
         run: |
-      
           if [ ! -f "$GITHUB_WORKSPACE/dist/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
           then
             echo "Cache not found or invalid. Build"
           else
             echo "Cache found. Skip"
-            exit 0
+            exit 78
           fi
           
-                
+      - name: "Clone tools"
+        shell: bash
+        run: |     
           mkdir -p v8build
           cd v8build
           
@@ -79,34 +78,67 @@ jobs:
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
           echo "Cloned!"
           
-          echo "Export path"
-          export PATH="$GITHUB_WORKSPACE/v8build/depot_tools:$PATH" 
-          
+      - name: "Fetch v8 ${{ env.V8VERSION }}"
+        shell: bash
+        run: |     
           echo "Fetch v8"          
+          cd v8build
+          
+          if [ "${{ matrix.os }}" == "windows-latest" ];
+          then 
+            alias fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch"
+            alias gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
+          else
+            alias fetch="$GITHUB_WORKSPACE/v8build/depot_tools/fetch.bat"
+            alias gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient.bat"
+          fi
+
           fetch v8
+          
           cd v8
           git checkout ${V8VERSION}
           cd ..
           
           echo "Set platform"          
           tos="${{ matrix.target_os }}"
-          if [ "$tos" == "win32" ];then tos="win"; fi
-          
+          if [ "$tos" == "win32" ];then tos="win"; fi          
           echo "target_os= ['$tos']">>.gclient
+          
           gclient sync
           
           cd v8
           ls ./build/ -l
           
-          echo "Install dependencies"
-          ./build/install-build-deps.sh
-         
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ];
+          then 
+             echo "Install dependencies"
+            ./build/install-build-deps.sh
+          fi
+
+
+      - name: Build v8
+        shell: bash
+        run: |      
+          cd v8build/v8 
+          
+          if [ "${{ matrix.os }}" == "windows-latest" ];
+          then 
+            alias gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn"
+          else
+            alias gn="$GITHUB_WORKSPACE/v8build/depot_tools/gn.bat"
+          fi
+          
           echo "Prepare build"
           gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                   
           echo "Build"
           ninja -C out/          
-                         
+      
+      - name: Dist v8
+        shell: bash
+        run: |            
+          cd v8build/v8 
+             
           echo "Prepare dist"
           distPath="$GITHUB_WORKSPACE/v8.out/"
           libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
@@ -118,11 +150,8 @@ jobs:
           cp -v out/obj/libv8_monolith.* "$libsPath"
           cp -Rv include  "$distPath"
           echo 1 > "$distPath"
-          
-          cd ../..
-          
-          echo "Done"
                     
+          echo "Done"                    
 
       - name: Setup DEBUG tmate session
         if: ${{ failure() }} && env.DEBUG_TMATE!=""
