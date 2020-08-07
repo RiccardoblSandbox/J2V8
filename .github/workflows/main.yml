@@ -3,6 +3,7 @@ on: [push]
 env:
   V8VERSION: 7.4.288
   CACHE_ID: 1
+  DEBUG_TMATE: "1"
   
 jobs:
   buildV8:
@@ -12,12 +13,35 @@ jobs:
       matrix:
         include:
           
-
+          - target: win32-x64
+            target_os: windows
+            target_arch: x64 
+            config: windows-x64 
 
           - target: linux-x64
             target_os: linux
             target_arch: x64 
             config: linux-x64 
+
+          - target: android-arm
+            target_os: android
+            target_arch: arm
+            config: android-arm
+
+          - target: android-arm64
+            target_os: android
+            target_arch: arm64
+            config: android-arm64
+
+          - target: android-ia32
+            target_os: android
+            target_arch: ia32
+            config: android-ia32
+ 
+          - target: android-x64
+            target_os: android
+            target_arch: x64
+            config: android-x64
 
          
 
@@ -35,9 +59,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
-      
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v2
       
       - name: Build v8 ${{ env.V8VERSION }}
         env:
@@ -71,31 +92,25 @@ jobs:
           cd v8
           ./build/install-build-deps.sh
           ./tools/dev/v8gen.py ${{ matrix.target_arch }}.release -vv
-            
+          
+          gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.config }}/args.gn`"
                     
-          rm out.gn/${{ matrix.target_arch }}.release/args.gn          
-          cp -v $GITHUB_WORKSPACE/v8/${{ matrix.config }}/args.gn out.gn/${{ matrix.target_arch }}.release/args.gn
-          
-          cat out.gn/${{ matrix.target_arch }}.release/args.gn
-          ninja -C out.gn/${{ matrix.target_arch }}.release 
-          
-          
-          du out.gn/${{ matrix.target_arch }}.release
-                
+          ninja -C out/          
+                         
           rm -Rf $GITHUB_WORKSPACE/dist/ || true
           mkdir -p $GITHUB_WORKSPACE/dist/
           
-          cp out.gn/${{ matrix.target_arch }}.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
-          cp -R include $GITHUB_WORKSPACE/dist/
+          cp -v out/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
+          cp -Rv include $GITHUB_WORKSPACE/dist/
           echo 1 > $GITHUB_WORKSPACE/dist/built
           
-          cd ..
-          
-          cd ..
-          
+          cd ../..
+                    
 
-          
-
+      - name: Setup DEBUG tmate session
+        if: ${{ failure() }} && env.DEBUG_TMATE!=""
+        uses: mxschmitt/action-tmate@v2
+        
   generate_j2v8_archives:
     strategy:
       fail-fast: true
