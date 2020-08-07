@@ -6,7 +6,16 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [linux] 
+        target: [win32-x64,linux-x64] 
+        include:
+          - target: win32-x64
+            target_os: windows
+            target_arch: x64 
+            config: windows-x64 
+          - target: linux-x64
+            target_os: linux
+            target_arch: x64 
+            config: linux-x64 
 
 
     runs-on: ubuntu-latest
@@ -31,24 +40,27 @@ jobs:
           git checkout ${USE_VERSION}
           cd ..
           
-          echo "target_os= ['${{ matrix.target }} ']">>.gclient
+          echo "target_os= ['${{ matrix.target_os }}']">>.gclient
           gclient sync
           
           cd v8
           ./build/install-build-deps.sh
-          ./tools/dev/v8gen.py x64.release -vv
-          rm out.gn/x64.release/args.gn          
-          cp -v $GITHUB_WORKSPACE/v8/linux-x64/args.gn out.gn/x64.release/args.gn
+          ./tools/dev/v8gen.py ${{ matrix.target_arch }}.release -vv
+            
+                    
+          rm out.gn/${{ matrix.target_arch }}.release/args.gn          
+          cp -v $GITHUB_WORKSPACE/v8/${{ matrix.config }}/args.gn out.gn/${{ matrix.target_arch }}.release/args.gn
           
-          cat out.gn/x64.release/args.gn
-          ninja -C out.gn/x64.release 
+          cat out.gn/${{ matrix.target_arch }}.release/args.gn
+          ninja -C out.gn/${{ matrix.target_arch }}.release 
           
           
-          du out.gn/x64.release
+          du out.gn/${{ matrix.target_arch }}.release
                 
+          rm -Rf $GITHUB_WORKSPACE/dist/ || true
           mkdir -p $GITHUB_WORKSPACE/dist/
           
-          cp out.gn/x64.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
+          cp out.gn/${{ matrix.target_arch }}.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
           cp -R include $GITHUB_WORKSPACE/dist/
           
           cd ..
