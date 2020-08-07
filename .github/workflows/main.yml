@@ -75,15 +75,20 @@ jobs:
           mkdir -p v8build
           cd v8build
           
+          echo "Clone tools"
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
-          export PATH=$GITHUB_WORKSPACE/v8build/depot_tools:"$PATH" 
-
-          fetch v8
+          echo "Cloned!"
           
+          echo "Export path"
+          export PATH="$GITHUB_WORKSPACE/v8build/depot_tools:$PATH" 
+          
+          echo "Fetch v8"          
+          fetch v8
           cd v8
           git checkout ${V8VERSION}
           cd ..
           
+          echo "Set platform"          
           tos="${{ matrix.target_os }}"
           if [ "$tos" == "win32" ];then tos="win"; fi
           
@@ -92,13 +97,17 @@ jobs:
           
           cd v8
           ls ./build/ -l
+          
+          echo "Install dependencies"
           ./build/install-build-deps.sh
          
+          echo "Prepare build"
           gn gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
-                    
+                  
+          echo "Build"
           ninja -C out/          
                          
-          
+          echo "Prepare dist"
           distPath="$GITHUB_WORKSPACE/v8.out/"
           libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
           
@@ -111,6 +120,8 @@ jobs:
           echo 1 > "$distPath"
           
           cd ../..
+          
+          echo "Done"
                     
 
       - name: Setup DEBUG tmate session
