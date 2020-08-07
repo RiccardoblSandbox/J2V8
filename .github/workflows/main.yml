@@ -10,38 +10,16 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        target: [linux-x64] 
         include:
           
-          - target: win32-x64
-            target_os: windows
-            target_arch: x64 
-            config: windows-x64 
+
 
           - target: linux-x64
             target_os: linux
             target_arch: x64 
             config: linux-x64 
 
-          - target: android-arm
-            target_os: android
-            target_arch: arm
-            config: android-arm
-
-          - target: android-arm64
-            target_os: android
-            target_arch: arm64
-            config: android-arm64
-
-          - target: android-ia32
-            target_os: android
-            target_arch: ia32
-            config: android-ia32
- 
-          - target: android-x64
-            target_os: android
-            target_arch: x64
-            config: android-x64
+         
 
 
     runs-on: ubuntu-latest
