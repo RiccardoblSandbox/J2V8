@@ -1,33 +1,76 @@
 name: Build J2V8
 on: [push]
-
+env:
+  V8VERSION: 7.4.288
+  CACHE_ID: 0
+  
 jobs:
   buildV8:
     strategy:
       fail-fast: true
       matrix:
-        target: [win32-x64,linux-x64] 
+        target: [win32-x64,linux-x64,android-arm,android-arm64,android-ia32,android-x64] 
         include:
+          
           - target: win32-x64
             target_os: windows
             target_arch: x64 
             config: windows-x64 
+
           - target: linux-x64
             target_os: linux
             target_arch: x64 
             config: linux-x64 
 
+          - target: android-arm
+            target_os: android
+            target_arch: arm
+            config: android-arm
+
+          - target: android-arm64
+            target_os: android
+            target_arch: arm64
+            config: android-arm64
+
+          - target: android-ia32
+            target_os: android
+            target_arch: ia32
+            config: android-ia32
+ 
+          - target: android-x64
+            target_os: android
+            target_arch: x64
+            config: android-x64
+
 
     runs-on: ubuntu-latest
     steps:
+      
+      - name: Setup cache
+        uses: actions/cache@v2.1.0
+        with:
+          path: dist/
+          key: ${{ matrix.target }}-${V8VERSION}-${CACHE_ID}
+          
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
         with:
           fetch-depth: 1
-      - name: Build v8
+      
+      - name: Build v8 ${{ matrix.target }}-${V8VERSION}
         env:
           USE_VERSION: 7.4.288 
         run: |
+      
+          if [ ! -f "$GITHUB_WORKSPACE/dist/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
+          then
+            echo "Cache not found or invalid. Build"
+          else
+            echo "Cache found. Skip"
+            exit 0
+          fi
+          
+                
           mkdir -p v8build
           cd v8build
           
@@ -37,7 +80,7 @@ jobs:
           fetch v8
           
           cd v8
-          git checkout ${USE_VERSION}
+          git checkout ${V8VERSION}
           cd ..
           
           echo "target_os= ['${{ matrix.target_os }}']">>.gclient
@@ -62,10 +105,14 @@ jobs:
           
           cp out.gn/${{ matrix.target_arch }}.release/obj/libv8_monolith.* $GITHUB_WORKSPACE/dist/
           cp -R include $GITHUB_WORKSPACE/dist/
+          echo 1 > $GITHUB_WORKSPACE/dist/built
           
           cd ..
           
           cd ..
+          
+
+          
 
   generate_j2v8_archives:
     strategy:
