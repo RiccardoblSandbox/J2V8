@@ -16,6 +16,7 @@ jobs:
       fail-fast: true
       matrix:
         include:          
+############################### BUILD MATRIX (is there a way to make this global?) ###############################
           - target: windows-x64 # Arbitrary name
             target_os: win32 # Used by build scripts 
             target_arch: x64 # Used by build scripts
@@ -45,35 +46,46 @@ jobs:
             target_os: android
             target_arch: x64       
             os: ubuntu-latest  
+############################################### /BUILD MATRIX ###############################################
 
 
     runs-on: ${{ matrix.os }}
     steps:
-      
+
+      # Setup python 2.7
       - name: Set up Python 2.7
         uses: actions/setup-python@v2
         with:
           python-version: 2.7
 
+      # Setup MSBuild
       - name: Setup MSBuild
         if: matrix.os == 'windows-latest'
         uses: microsoft/setup-msbuild@v1.0.1
         
+      # Clone repo
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 1     
       
+      # Get cache if available
       - name: Setup cache
         uses: actions/cache@v2.1.0
         with:
           path: v8.out/
           key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}          
-
+          
+        
+      # Build v8 if needed (not cached), otherwise exit the job
       - name: Fetch and build v8 ${{ env.V8VERSION }} on ${{ matrix.target }}
         shell: bash
         run: |
-          if [ ! -f "$GITHUB_WORKSPACE/dist/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
+          distPath="$GITHUB_WORKSPACE/v8.out/"
+          libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
+          
+          # Check if cache available
+          if [ ! -f "$distPath/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
           then
             echo "Cache not found or invalid. Build"
           else
@@ -84,11 +96,12 @@ jobs:
           mkdir -p v8build
           cd v8build
           
-          
+          # Dev tools
           echo "Clone tools"
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
           echo "Cloned!"
           
+          # We use .bat scripts on windows 
           echo "Select build tools for ${{ matrix.os }}"
           if [ "${{ matrix.os }}" == "windows-latest" ];
           then 
@@ -101,51 +114,64 @@ jobs:
             export gclient="$GITHUB_WORKSPACE/v8build/depot_tools/gclient"
           fi
 
+          # Clone v8
           echo "Fetch v8"          
           "$fetch" v8
           
+          # Select the version
           cd v8
           git checkout ${V8VERSION}
           cd ..
-          
-          echo "Set platform"          
-          tos="${{ matrix.target_os }}"
-          if [ "$tos" == "win32" ];then tos="win"; fi          
-          echo "target_os= ['$tos']">>.gclient
+
+          tos="${{ matrix.target_os }}"; 
+          if [ "$tos" != "win32" ]; # Don't crossbuild windows.
+          then
+            echo "Set platform"          
+            echo "target_os= ['$tos']">>.gclient
+          fi
           
           "$gclient" sync
           
           cd v8
           ls ./build/ -l
           
+          # Only linux needs this?
           if [ "${{ matrix.os }}" == "ubuntu-latest" ];
           then 
              echo "Install dependencies"
             ./build/install-build-deps.sh
           fi
           
+          # Prepare
           echo "Prepare build"
           "$gn" gen out --args="`cat $GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn`"
                   
+          # Build!
           echo "Build"
           ninja -C out/          
-                   
+                  
+
+          # Dist
           echo "Prepare dist"
-          distPath="$GITHUB_WORKSPACE/v8.out/"
-          libsPath="$distPath/${{ matrix.target_os }}.${{ matrix.target_arch }}"
-          
+                
+          # Make sure the paths are empty
           rm -Rf "$libsPath" || true
-          rm -Rf "$distPath" || true
-          
+          rm -Rf "$distPath" || true          
           mkdir -p "$distPath"
           mkdir -p "$libsPath"
           
+          # Copy library
           cp -v out/obj/libv8_monolith.* "$libsPath"
+          
+          # Copy headers
           cp -Rv include  "$distPath"
-          echo 1 > "$distPath"
+
+          # Write the file that is used at the beginning of the code to check if the cache is available
+          echo 1 > "$distPath/built"
                     
           echo "Done"                    
-
+      
+      # If job fails and DEBUG_TMATE!="", starts tmate session
       - name: Setup DEBUG tmate session
         if: ${{ failure() }} && env.DEBUG_TMATE!=""
         uses: mxschmitt/action-tmate@v2
@@ -156,6 +182,7 @@ jobs:
       fail-fast: true
       matrix:
         include: 
+############################### BUILD MATRIX (is there a way to make this global?) ###############################
           - target: windows-x64
             target_os: win32
             target_arch: x64 
@@ -185,33 +212,38 @@ jobs:
             target_os: android
             target_arch: x64
             os: ubuntu-latest  
+############################################### /BUILD MATRIX ###############################################
 
     runs-on: ${{ matrix.os }}
     name: Build for ${{ matrix.target }}
     needs: [buildV8]
   
     steps:
-          
+    # Setup python 2.7      
     - name: Set up Python 2.7
       uses: actions/setup-python@v2
       with:
         python-version: 2.7
     
+    # Setup ms build
     - name: Setup MSBuild
       if: matrix.os == 'windows-latest'
       uses: microsoft/setup-msbuild@v1.0.1
     
+    # Clone repo
     - name: Checkout
       uses: actions/checkout@v1
       with:
         depth: 1    
    
+    # Get v8 built from previous job or cached by a previous run
     - name: Get prebuilt v8 library
       uses: actions/cache@v2.1.0
       with:
         path: v8.out/
         key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}       
           
+    # Build ON WINDOWS
     - name: Build j2v8 for ${{ matrix.target }}
       if: matrix.os == 'windows-latest'
       shell: cmd
@@ -219,6 +251,7 @@ jobs:
         .\j2v8-cli.cmd
         python build.py -t  ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
         
+    # Build ON EVERYTHING ELSE
     - name: Build j2v8 for ${{ matrix.target }}
       if: matrix.os != 'windows-latest'
       run: |
@@ -226,6 +259,7 @@ jobs:
         a1=""; if [ "${{ matrix.target_os }}" == "android" ]; then a1="$a1 --keep-native-libs"; fi
         python build.py -t ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} $a1 --docker j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
         
+    # If job fails and DEBUG_TMATE!="", starts tmate session
     - name: Setup DEBUG tmate session
       if: ${{ failure() }} && env.DEBUG_TMATE!=""
       uses: mxschmitt/action-tmate@v2
