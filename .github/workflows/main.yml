@@ -6,6 +6,7 @@ env:
   
 jobs:
   buildV8:
+    name: Build V8 v${{ env.V8VERSION }} on ${{ matrix.target }}
     strategy:
       fail-fast: true
       matrix:
@@ -50,14 +51,14 @@ jobs:
         uses: actions/cache@v2.1.0
         with:
           path: dist/
-          key: ${{ matrix.target }}-${V8VERSION}-${CACHE_ID}
+          key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}
           
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 1
       
-      - name: Build v8 ${{ matrix.target }}-${V8VERSION}
+      - name: Build v8
         env:
           USE_VERSION: 7.4.288 
         run: |
