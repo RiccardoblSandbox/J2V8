@@ -3,19 +3,23 @@ on: [push]
 env:
   V8VERSION: 7.4.288 # Which v8 version to checkout
   CACHE_ID: "1" # Arbitrary string appended at the end of the cache key
-  DEBUG_TMATE: "1" # If != "" starts an ssh session when the build fails.
-  
+  DEBUG_TMATE: "" # If != "" starts an ssh session when the build fails.
+  # Needed to build on windows.
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  GYP_MSVS_VERSION: 2019
+
 jobs:
   buildV8:
+    # Build v8 library. A cached build will be used if available 
     name: Build V8 on ${{ matrix.target }}
     strategy:
       fail-fast: true
       matrix:
         include:          
-          - target: windows-x64
-            target_os: win32
-            target_arch: x64 
-            os: windows-latest  
+          - target: windows-x64 # Arbitrary name
+            target_os: win32 # Used by build scripts 
+            target_arch: x64 # Used by build scripts
+            os: windows-latest  # Used by workflow
 
           - target: linux-x64
             target_os: linux
@@ -46,21 +50,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       
+      - name: Set up Python 2.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+
+      - name: Setup MSBuild
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1.0.1
+        
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1     
+      
       - name: Setup cache
         uses: actions/cache@v2.1.0
         with:
           path: v8.out/
-          key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}
-          
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-          
-      - name: "Fetch and build v8 ${{ env.V8VERSION }} on ${{ matrix.target }}"
-        env:
-          DEPOT_TOOLS_WIN_TOOLCHAIN: 0
-          GYP_MSVS_VERSION: 2015
+          key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}          
+
+      - name: Fetch and build v8 ${{ env.V8VERSION }} on ${{ matrix.target }}
         shell: bash
         run: |
           if [ ! -f "$GITHUB_WORKSPACE/dist/built" ] || [[ $GITHUB_REF == refs\/tags* ]]; # Always build fresh on tags.
@@ -73,6 +83,7 @@ jobs:
 
           mkdir -p v8build
           cd v8build
+          
           
           echo "Clone tools"
           git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
@@ -140,6 +151,7 @@ jobs:
         uses: mxschmitt/action-tmate@v2
         
   buildJ2v8:
+    # Build j2v8
     strategy:
       fail-fast: true
       matrix:
@@ -178,40 +190,43 @@ jobs:
     name: Build for ${{ matrix.target }}
     needs: [buildV8]
   
-
     steps:
-    
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        depth: 1
-      
+          
     - name: Set up Python 2.7
       uses: actions/setup-python@v2
       with:
         python-version: 2.7
+    
+    - name: Setup MSBuild
+      if: matrix.os == 'windows-latest'
+      uses: microsoft/setup-msbuild@v1.0.1
+    
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        depth: 1    
    
-    - name: Fetch v8 library
+    - name: Get prebuilt v8 library
       uses: actions/cache@v2.1.0
       with:
         path: v8.out/
         key: ${{ matrix.target }}-${{ env.V8VERSION }}-${{ env.CACHE_ID }}       
           
-    - name: Setup MSBuild
-      if: matrix.os == 'windows-latest'
-      uses: microsoft/setup-msbuild@v1.0.1
-        
-    - name: Build for ${{ matrix.target }}
+    - name: Build j2v8 for ${{ matrix.target }}
       if: matrix.os == 'windows-latest'
       shell: cmd
       run: |
         .\j2v8-cli.cmd
         python build.py -t  ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
         
-    - name: Build for ${{ matrix.target }}
+    - name: Build j2v8 for ${{ matrix.target }}
       if: matrix.os != 'windows-latest'
       run: |
         source ./j2v8-cli.sh
         a1=""; if [ "${{ matrix.target_os }}" == "android" ]; then a1="$a1 --keep-native-libs"; fi
         python build.py -t ${{ matrix.target_os }} -a  ${{ matrix.target_arch }} $a1 --docker j2v8cmake j2v8jni j2v8cpp j2v8optimize j2v8java j2v8test
+        
+    - name: Setup DEBUG tmate session
+      if: ${{ failure() }} && env.DEBUG_TMATE!=""
+      uses: mxschmitt/action-tmate@v2
         
