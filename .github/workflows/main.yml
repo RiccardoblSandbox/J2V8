@@ -2,7 +2,7 @@ name: Build J2V8
 on: [push]
 env:
   V8VERSION: 7.4.288
-  CACHE_ID: 0
+  CACHE_ID: 1
   
 jobs:
   buildV8:
