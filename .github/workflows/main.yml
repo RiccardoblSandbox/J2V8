@@ -6,7 +6,7 @@ env:
   
 jobs:
   buildV8:
-    name: Build V8 v${{ env.V8VERSION }} on ${{ matrix.target }}
+    name: Build V8 on ${{ matrix.target }}
     strategy:
       fail-fast: true
       matrix:
@@ -58,7 +58,7 @@ jobs:
         with:
           fetch-depth: 1
       
-      - name: Build v8
+      - name: Build v8 ${{ env.V8VERSION }}
         env:
           USE_VERSION: 7.4.288 
         run: |
