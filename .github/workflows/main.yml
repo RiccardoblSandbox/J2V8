@@ -126,7 +126,6 @@ jobs:
             export ninja="`which ninja`"
             export gm="python \"$GITHUB_WORKSPACE/v8build/v8/tools/dev/gm.py\""
           fi
-          ls $GITHUB_WORKSPACE/v8build/v8/tools/dev/
 
           
 
@@ -138,6 +137,9 @@ jobs:
           cd v8
           git checkout ${V8VERSION}
           cd ..
+          
+          ls $GITHUB_WORKSPACE/v8build/v8/tools/dev/
+
 
           tos="${{ matrix.target_os }}"; 
           if [ "$tos" != "win32" ]; # Don't crossbuild windows.
