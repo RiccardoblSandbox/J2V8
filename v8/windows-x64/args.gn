@@ -1,4 +1,4 @@
-target_os = "windows"
+target_os = "win"
 target_cpu = "x64"
 is_component_build = false
 is_debug = false
