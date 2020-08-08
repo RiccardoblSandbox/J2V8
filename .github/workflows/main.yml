@@ -1,7 +1,7 @@
 name: Build J2V8
 on: [push]
 env:
-  V8VERSION: 7.4.288 # Which v8 version to checkout
+  V8VERSION: 8.6.342 # Which v8 version to checkout
   CACHE_ID: "1" # Arbitrary string appended at the end of the cache key
   DEBUG_TMATE: "" # If != "" starts an ssh session when the build fails.
   # Needed to build on windows.
