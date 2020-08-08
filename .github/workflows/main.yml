@@ -125,6 +125,9 @@ jobs:
             export ninja="`which ninja`"
           fi
 
+
+          export PATH=$PATH:"$GITHUB_WORKSPACE/v8build/depot_tools/"
+
           
 
           # Clone v8
