@@ -171,8 +171,12 @@ jobs:
           # Build!
           #echo "Build"
           #"$ninja" -C out/          
-          ls ./tools/dev/gm.py 
-          python ./tools/dev/gm.py x64.release
+          
+          mkdir -p "out/${{ matrix.target_arch }}.release"
+          cp "$GITHUB_WORKSPACE/v8/${{ matrix.target }}/args.gn" "out/${{ matrix.target_arch }}.release/args.gn"
+
+          python ./tools/dev/gm.py ${{ matrix.target_arch }}.release
+          
           du .       
 
           # Dist
@@ -185,7 +189,7 @@ jobs:
           mkdir -p "$libsPath"
           
           # Copy library
-          cp -v out.gm/obj/libv8_monolith.* "$libsPath"
+          cp -v out/obj/libv8_monolith.* "$libsPath"
           
           # Copy headers
           cp -Rv include  "$distPath"
