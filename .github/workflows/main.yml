@@ -189,7 +189,7 @@ jobs:
           mkdir -p "$libsPath"
           
           # Copy library
-          cp -v out/obj/libv8_monolith.* "$libsPath"
+          cp -v out/obj/*8_monolith.* "$libsPath"
           
           # Copy headers
           cp -Rv include  "$distPath"
